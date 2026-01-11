@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>In Your Heart</title>
+
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #0f0f12;
+    font-family: -apple-system, system-ui;
+    color: #f5f5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .container {
+    text-align: center;
+    user-select: none;
+    width: 100%;
+    max-width: 360px;
+  }
+
+  /* HEART */
+  .heart {
+    position: relative;
+    width: 180px;
+    height: 160px;
+    margin: 30px auto;
+  }
+
+  .heart::before,
+  .heart::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    width: 90px;
+    height: 140px;
+    background: #8b0000;
+    border-radius: 90px 90px 0 0;
+  }
+
+  .heart::before {
+    left: 90px;
+    transform: rotate(-45deg);
+    transform-origin: 0 100%;
+  }
+
+  .heart::after {
+    left: 0;
+    transform: rotate(45deg);
+    transform-origin: 100% 100%;
+  }
+
+  .flame {
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    width: 24px;
+    height: 40px;
+    background: linear-gradient(#ffd27d, #ff4500);
+    border-radius: 50%;
+    transform: translateX(-50%);
+  }
+
+  .center-text {
+    position: absolute;
+    top: 55%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 14px;
+    opacity: 0;
+  }
+
+  .heart.filled .center-text {
+    opacity: 1;
+  }
+
+  /* SYMBOLS */
+  .symbols {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 20px;
+  }
+
+  .symbol {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #1e1e26;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .hidden {
+    visibility: hidden;
+  }
+
+  .response {
+    margin-top: 20px;
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+
+  .response.show {
+    opacity: 0.8;
+  }
+
+  .date {
+    margin-top: 10px;
+    font-size: 11px;
+    opacity: 0.35;
+  }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+  <div id="heart" class="heart">
+    <div class="flame"></div>
+    <div class="center-text">Me + Jesus</div>
+  </div>
+
+  <div class="symbols">
+    <div id="jesus" class="symbol">✝︎</div>
+    <div id="me" class="symbol">●</div>
+  </div>
+
+  <div id="response" class="response"></div>
+  <div id="date" class="date"></div>
+
+</div>
+
+<script>
+  const heart = document.getElementById("heart");
+  const jesus = document.getElementById("jesus");
+  const me = document.getElementById("me");
+  const responseEl = document.getElementById("response");
+  const dateEl = document.getElementById("date");
+
+  const today = new Date().toISOString().slice(0, 10);
+  dateEl.textContent = today;
+
+  const responses = [
+    "Remain in Me.",
+    "I have you.",
+    "Do not be afraid.",
+    "I receive you.",
+    "Peace. Stay.",
+    "Enough for today.",
+    "I am with you.",
+    "Rest here."
+  ];
+
+  let placed = { jesus: false, me: false };
+
+  const history = JSON.parse(localStorage.getItem("surrender-log") || "{}");
+
+  // If already surrendered today, restore state
+  if (history[today]) {
+    heart.classList.add("filled");
+    responseEl.textContent = history[today].message;
+    responseEl.classList.add("show");
+    jesus.classList.add("hidden");
+    me.classList.add("hidden");
+  }
+
+  function enableDrag(el, key) {
+    let offsetX = 0, offsetY = 0;
+
+    el.addEventListener("pointerdown", e => {
+      offsetX = e.clientX - el.getBoundingClientRect().left;
+      offsetY = e.clientY - el.getBoundingClientRect().top;
+      el.setPointerCapture(e.pointerId);
+    });
+
+    el.addEventListener("pointermove", e => {
+      if (!el.hasPointerCapture(e.pointerId)) return;
+      el.style.position = "fixed";
+      el.style.left = (e.clientX - offsetX) + "px";
+      el.style.top = (e.clientY - offsetY) + "px";
+    });
+
+    el.addEventListener("pointerup", e => {
+      el.releasePointerCapture(e.pointerId);
+      const h = heart.getBoundingClientRect();
+      const s = el.getBoundingClientRect();
+
+      const inside =
+        s.left > h.left &&
+        s.right < h.right &&
+        s.top > h.top &&
+        s.bottom < h.bottom;
+
+      if (inside) {
+        el.classList.add("hidden");
+        placed[key] = true;
+        checkComplete();
+      }
+    });
+  }
+
+  function checkComplete() {
+    if (placed.jesus && placed.me && !history[today]) {
+      heart.classList.add("filled");
+
+      const message = responses[Math.floor(Math.random() * responses.length)];
+      responseEl.textContent = message;
+      responseEl.classList.add("show");
+
+      history[today] = {
+        timestamp: Date.now(),
+        message: message
+      };
+
+      localStorage.setItem("surrender-log", JSON.stringify(history));
+    }
+  }
+
+  enableDrag(jesus, "jesus");
+  enableDrag(me, "me");
+</script>
+</body>
+</html>
